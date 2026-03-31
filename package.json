@@ -1,0 +1,13 @@
+{
+  "name": "Neeto-form-playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/lavesh-saluja32/Neeto-form-playwright.git",
+  "author": "Lavesh Saluja <lavesh.saluja@bigbinary.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
+  },
+  "scripts": {}
+}
