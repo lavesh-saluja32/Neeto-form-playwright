@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from "dotenv";
+
+export const STORAGE_STATE = "./auth/user.json";
+
+dotenv.config({ path: "./e2e/config/.env" })
 
 /**
  * Read environment variables from file.
@@ -30,44 +35,31 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    baseURL: 'https://neeto-form-web-playwright.neetodeployapp.com/',
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "login",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: "**/login.setup.ts",
     },
-
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: "teardown",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: "**/global.teardown.ts",
     },
-
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: "Logged In tests",
+      // Load the auth state created by the `login` project.
+      // This ensures all tests in this project start authenticated.
+      use: { ...devices["Desktop Chrome"], storageState: STORAGE_STATE },
+
+      dependencies: ["login"],
+      teardown: "teardown",
+      testMatch: "**/*.spec.ts",
     },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
