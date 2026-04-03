@@ -2,6 +2,9 @@ export const FORM_BUILDER_SELECTORS = {
   addFormButton: "add-form-button",
   startFromScratchButton: "start-from-scratch-button",
   addElementButton: "add-element-button",
+  addOptionLink: "add-option-link",
+  randomizeSwitchLabel: "randomize-switch-label",
+  hideQuestionToggleLabel: "hide-question-toggle-label",
   publishButton: "publish-button",
   publishPreviewButton: "publish-preview-button",
   submissionsTab: "submissions-tab",
@@ -34,4 +37,6 @@ export const FORM_PUBLISHED_SELECTORS = {
   firstNameTextField: "first-name-text-field",
   lastNameTextField: "last-name-text-field",
   thankYouPageMessage: "thank-you-page-message",
+  singleChoiceOptionsContainer: "single-choice-options-container",
+  formGroupQuestion: "form-group-question",
 } as const;

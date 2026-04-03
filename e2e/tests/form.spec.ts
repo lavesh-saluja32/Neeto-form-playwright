@@ -5,7 +5,9 @@ import { faker } from "@faker-js/faker";
 import { FORM_PUBLISHED_SELECTORS, FORM_BUILDER_SELECTORS } from "@selectors";
 import {
   COMMON_FORM_TEST_DATA,
+  CUSTOMIZE_FORM_FIELDS,
   DEFAULT_FORM_FIELDS,
+  FORM_BUILDER_FIELD_LABELS,
   FORM_VALIDATION_MESSAGES,
 } from "@texts";
 
@@ -14,7 +16,7 @@ test.describe("Form page", () => {
   test.afterEach(async ({ page, formPage }) => {
     // clean up delete form
     await test.step("Delete and verify form", async () => {
-        await formPage.deleteFormAndVerify(formName)
+      await formPage.deleteFormAndVerify(formName);
     });
   });
 
@@ -35,11 +37,7 @@ test.describe("Form page", () => {
     let page2: Page;
 
     await test.step("3. Visit published form (preview in new tab)", async () => {
-      const page2Promise = page.waitForEvent("popup");
-      await page
-        .getByTestId(FORM_BUILDER_SELECTORS.publishPreviewButton)
-        .click();
-      page2 = await page2Promise;
+      page2 = await formPage.openPublishPreviewInNewTab();
     });
 
     await test.step("4. Verify all fields are present on the submission page", async () => {
@@ -112,6 +110,71 @@ test.describe("Form page", () => {
       await page.getByTestId(FORM_BUILDER_SELECTORS.submissionsTab).click();
       await expect(
         page.getByTestId(FORM_BUILDER_SELECTORS.submittedResponse1),
+      ).toBeVisible();
+    });
+  });
+
+
+  test("should customize form's field elements", async ({ page, formPage }) => {
+    await test.step("2. Create form with choice fields and builder customizations", async () => {
+      await formPage.createForm({
+        formFields: CUSTOMIZE_FORM_FIELDS,
+        formName,
+        publish: false,
+      });
+      await page
+        .getByRole("button", { name: FORM_BUILDER_FIELD_LABELS.question })
+        .nth(1)
+        .click();
+      await page.getByTestId(FORM_BUILDER_SELECTORS.addOptionLink).click();
+      await page
+        .getByTestId(FORM_BUILDER_SELECTORS.randomizeSwitchLabel)
+        .click();
+      await page
+        .getByRole("button", { name: FORM_BUILDER_FIELD_LABELS.question })
+        .nth(2)
+        .click();
+      await page.getByTestId(FORM_BUILDER_SELECTORS.addOptionLink).click();
+      await page
+        .getByTestId(FORM_BUILDER_SELECTORS.hideQuestionToggleLabel)
+        .click();
+      await formPage.publishForm();
+    });
+
+    const previewPage = await test.step("3. Open publish preview", () =>
+      formPage.openPublishPreviewInNewTab(),
+    );
+
+    await test.step("4. Verify single choice options order changes after reload (randomized)", async () => {
+      const optionsBefore = await previewPage
+        .getByTestId(FORM_PUBLISHED_SELECTORS.singleChoiceOptionsContainer)
+        .allInnerTexts();
+      await previewPage.reload();
+      const optionsAfter = await previewPage
+        .getByTestId(FORM_PUBLISHED_SELECTORS.singleChoiceOptionsContainer)
+        .allInnerTexts();
+      expect(optionsBefore).not.toEqual(optionsAfter);
+    });
+
+    await test.step("5. Verify hidden question is not shown on preview", async () => {
+      await expect(
+        previewPage.getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion).nth(2),
+      ).toBeHidden();
+    });
+
+    await test.step("6. Reveal hidden question, republish, and verify it appears", async () => {
+      await page
+        .getByRole("button", { name: FORM_BUILDER_FIELD_LABELS.question })
+        .nth(2)
+        .click();
+      await page
+        .getByTestId(FORM_BUILDER_SELECTORS.hideQuestionToggleLabel)
+        .click();
+      await formPage.publishForm();
+      await previewPage.reload();
+      await previewPage.reload();
+      await expect(
+        previewPage.getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion).nth(2),
       ).toBeVisible();
     });
   });

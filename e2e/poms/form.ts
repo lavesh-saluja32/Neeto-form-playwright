@@ -8,12 +8,17 @@ import {
 interface FormProps {
   formFields: string[];
   formName: string;
+  publish?: boolean;
 }
 
 export default class FormPage {
   constructor(private page: Page) {}
 
-  createForm = async ({ formFields, formName }: FormProps) => {
+  createForm = async ({
+    formFields,
+    formName,
+    publish = true,
+  }: FormProps) => {
     await this.page.getByTestId(FORM_BUILDER_SELECTORS.addFormButton).click();
     await this.page
       .getByTestId(FORM_BUILDER_SELECTORS.startFromScratchButton)
@@ -29,7 +34,21 @@ export default class FormPage {
     for (const field of formFields) {
       await this.page.getByRole("button", { name: field }).click();
     }
+    if (publish) {
+      await this.publishForm();
+    }
+  };
+
+  publishForm = async () => {
     await this.page.getByTestId(FORM_BUILDER_SELECTORS.publishButton).click();
+  };
+
+  openPublishPreviewInNewTab = async (): Promise<Page> => {
+    const popupPromise = this.page.waitForEvent("popup");
+    await this.page
+      .getByTestId(FORM_BUILDER_SELECTORS.publishPreviewButton)
+      .click();
+    return popupPromise;
   };
 
   deleteFormAndVerify = async (formName: string) => {
