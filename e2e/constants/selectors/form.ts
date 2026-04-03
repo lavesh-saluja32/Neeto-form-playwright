@@ -26,6 +26,14 @@ export const FORM_LOADING_SELECTORS = {
   uiSpinner: "neeto-ui-spinner",
 } as const;
 
+export const FORM_INSIGHTS_SELECTORS = {
+  analyticsTab: "analytics-tab",
+  visitsMetric: "visits-metric",
+  startsMetric: "starts-metric",
+  submissionsMetric: "submissions-metric",
+  insightsCount: "insights-count",
+} as const;
+
 export const FORM_PUBLISHED_SELECTORS = {
   emailGroup: "email-group",
   fullNameGroup: "full-name-group",

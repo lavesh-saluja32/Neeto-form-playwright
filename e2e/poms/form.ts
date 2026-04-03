@@ -28,11 +28,13 @@ export default class FormPage {
     await this.page
       .getByTestId(FORM_BUILDER_SELECTORS.formRename)
       .fill(formName);
-    await this.page
-      .getByTestId(FORM_BUILDER_SELECTORS.addElementButton)
-      .click();
-    for (const field of formFields) {
-      await this.page.getByRole("button", { name: field }).click();
+    if (formFields.length > 0) {
+      await this.page
+        .getByTestId(FORM_BUILDER_SELECTORS.addElementButton)
+        .click();
+      for (const field of formFields) {
+        await this.page.getByRole("button", { name: field }).click();
+      }
     }
     if (publish) {
       await this.publishForm();

@@ -22,3 +22,13 @@ export const CUSTOMIZE_FORM_FIELDS: string[] = [
   FORM_BUILDER_FIELD_LABELS.singleChoice,
   FORM_BUILDER_FIELD_LABELS.multipleChoice,
 ];
+
+/** Scratch form with no elements (e.g. insights counts from default fields only). */
+export const EMPTY_FORM_FIELDS: string[] = [];
+
+/** Expected `insights-count` text values in analytics tab assertions. */
+export const FORM_INSIGHTS_COUNTS = {
+  zero: "0",
+  one: "1",
+  two: "2",
+} as const;

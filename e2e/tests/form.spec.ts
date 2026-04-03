@@ -2,12 +2,18 @@ import { test } from "@fixtures";
 import { expect, type Page } from "@playwright/test";
 import { faker } from "@faker-js/faker";
 
-import { FORM_PUBLISHED_SELECTORS, FORM_BUILDER_SELECTORS } from "@selectors";
+import {
+  FORM_PUBLISHED_SELECTORS,
+  FORM_BUILDER_SELECTORS,
+  FORM_INSIGHTS_SELECTORS,
+} from "@selectors";
 import {
   COMMON_FORM_TEST_DATA,
   CUSTOMIZE_FORM_FIELDS,
   DEFAULT_FORM_FIELDS,
+  EMPTY_FORM_FIELDS,
   FORM_BUILDER_FIELD_LABELS,
+  FORM_INSIGHTS_COUNTS,
   FORM_VALIDATION_MESSAGES,
 } from "@texts";
 
@@ -107,14 +113,14 @@ test.describe("Form page", () => {
     });
 
     await test.step("10. Verify submission appears in submissions tab", async () => {
-      await page.getByTestId(FORM_BUILDER_SELECTORS.submissionsTab).click();
+      await page.getByTestId(FORM_BUILDER_SELECTORS.submissionsTab).dblclick();
       await expect(
         page.getByTestId(FORM_BUILDER_SELECTORS.submittedResponse1),
       ).toBeVisible();
     });
   });
 
-
+  let previewPage: Page;
   test("should customize form's field elements", async ({ page, formPage }) => {
     await test.step("2. Create form with choice fields and builder customizations", async () => {
       await formPage.createForm({
@@ -135,30 +141,38 @@ test.describe("Form page", () => {
         .nth(2)
         .click();
       await page.getByTestId(FORM_BUILDER_SELECTORS.addOptionLink).click();
+
       await page
         .getByTestId(FORM_BUILDER_SELECTORS.hideQuestionToggleLabel)
         .click();
       await formPage.publishForm();
     });
 
-    const previewPage = await test.step("3. Open publish preview", () =>
-      formPage.openPublishPreviewInNewTab(),
-    );
-
     await test.step("4. Verify single choice options order changes after reload (randomized)", async () => {
-      const optionsBefore = await previewPage
-        .getByTestId(FORM_PUBLISHED_SELECTORS.singleChoiceOptionsContainer)
-        .allInnerTexts();
-      await previewPage.reload();
-      const optionsAfter = await previewPage
-        .getByTestId(FORM_PUBLISHED_SELECTORS.singleChoiceOptionsContainer)
-        .allInnerTexts();
+      const popupPromise = page.waitForEvent("popup");
+      await page
+        .getByTestId(FORM_BUILDER_SELECTORS.publishPreviewButton)
+        .click();
+      previewPage = await popupPromise;
+      await previewPage.waitForLoadState("domcontentloaded");
+      const singleChoiceOptions = previewPage.getByTestId(
+        FORM_PUBLISHED_SELECTORS.singleChoiceOptionsContainer,
+      );
+      await expect(singleChoiceOptions.first()).toBeVisible();
+      const optionsBefore = await singleChoiceOptions.allInnerTexts();
+      await previewPage.reload({ waitUntil: "domcontentloaded" });
+      await expect(singleChoiceOptions.first()).toBeVisible();
+      const optionsAfter = await singleChoiceOptions.allInnerTexts();
+      expect(optionsBefore.length).toBeGreaterThan(0);
+      expect(optionsAfter.length).toBeGreaterThan(0);
       expect(optionsBefore).not.toEqual(optionsAfter);
     });
 
     await test.step("5. Verify hidden question is not shown on preview", async () => {
       await expect(
-        previewPage.getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion).nth(2),
+        previewPage
+          .getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion)
+          .nth(2),
       ).toBeHidden();
     });
 
@@ -174,8 +188,77 @@ test.describe("Form page", () => {
       await previewPage.reload();
       await previewPage.reload();
       await expect(
-        previewPage.getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion).nth(2),
+        previewPage
+          .getByTestId(FORM_PUBLISHED_SELECTORS.formGroupQuestion)
+          .nth(2),
       ).toBeVisible();
+    });
+  });
+
+  test("should verify form insights", async ({ page, formPage }) => {
+    const insightsCountIn = (metricTestId: string) =>
+      page
+        .getByTestId(metricTestId)
+        .getByTestId(FORM_INSIGHTS_SELECTORS.insightsCount);
+
+    await test.step("2. Create and publish a scratch form (no extra fields)", async () => {
+      await formPage.createForm({
+        formFields: EMPTY_FORM_FIELDS,
+        formName,
+      });
+    });
+
+    await test.step("3. Open analytics and verify baseline metrics", async () => {
+      await page.getByTestId(FORM_INSIGHTS_SELECTORS.analyticsTab).click();
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.visitsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.zero);
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.startsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.zero);
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.submissionsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.zero);
+    });
+
+    const previewPage = await test.step("4. Open publish preview", () =>
+      formPage.openPublishPreviewInNewTab());
+
+    await test.step("5. Reload builder; visits increment after preview opened", async () => {
+      await page.reload();
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.visitsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.one);
+    });
+
+    await test.step("6. Interact on preview; visits and starts update", async () => {
+      await previewPage.reload();
+      await previewPage
+        .getByTestId(FORM_PUBLISHED_SELECTORS.emailTextField)
+        .fill(COMMON_FORM_TEST_DATA.validEmail);
+      await page.reload();
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.visitsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.two);
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.startsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.one);
+    });
+
+    await test.step("7. Submit preview form; submissions increment", async () => {
+      await previewPage
+        .getByTestId(FORM_PUBLISHED_SELECTORS.startOrSubmitButton)
+        .click();
+      await page.reload();
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.visitsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.two);
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.startsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.one);
+      await expect(
+        insightsCountIn(FORM_INSIGHTS_SELECTORS.submissionsMetric),
+      ).toContainText(FORM_INSIGHTS_COUNTS.one);
     });
   });
 });

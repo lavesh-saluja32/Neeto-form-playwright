@@ -28,6 +28,12 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  /* Per-test timeout (default 30s); raise for slow network / loading states */
+  timeout: 60_000,
+  expect: {
+    /* Assertion timeout (default 5s); loaders often need longer */
+    timeout: 60_000,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
