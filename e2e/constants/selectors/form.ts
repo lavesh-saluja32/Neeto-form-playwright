@@ -34,6 +34,17 @@ export const FORM_INSIGHTS_SELECTORS = {
   insightsCount: "insights-count",
 } as const;
 
+export const FORM_ACCESS_SETTINGS_SELECTORS = {
+  settingsTab: "settings-tab",
+  accessControlSettingsLink: "access-control-settings-link",
+  accessControlPasswordProtectedRadioInput:
+    "access-control-password-protected-radio-input",
+  passwordInputField: "password-input-field",
+  saveChangesButton: "save-changes-button",
+  passwordTextField: "password-text-field",
+  continueButton: "continue-button",
+} as const;
+
 export const FORM_PUBLISHED_SELECTORS = {
   emailGroup: "email-group",
   fullNameGroup: "full-name-group",
@@ -45,6 +56,7 @@ export const FORM_PUBLISHED_SELECTORS = {
   firstNameTextField: "first-name-text-field",
   lastNameTextField: "last-name-text-field",
   thankYouPageMessage: "thank-you-page-message",
+  thankYouPageContent: "thank-you-page-content",
   singleChoiceOptionsContainer: "single-choice-options-container",
   formGroupQuestion: "form-group-question",
 } as const;

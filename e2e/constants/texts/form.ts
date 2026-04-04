@@ -32,3 +32,7 @@ export const FORM_INSIGHTS_COUNTS = {
   one: "1",
   two: "2",
 } as const;
+
+export const FORM_ACCESS_TEST_DATA = {
+  formPassword: "123456",
+} as const;

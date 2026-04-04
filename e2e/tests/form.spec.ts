@@ -5,6 +5,7 @@ import { faker } from "@faker-js/faker";
 import {
   FORM_PUBLISHED_SELECTORS,
   FORM_BUILDER_SELECTORS,
+  FORM_ACCESS_SETTINGS_SELECTORS,
   FORM_INSIGHTS_SELECTORS,
 } from "@selectors";
 import {
@@ -12,6 +13,7 @@ import {
   CUSTOMIZE_FORM_FIELDS,
   DEFAULT_FORM_FIELDS,
   EMPTY_FORM_FIELDS,
+  FORM_ACCESS_TEST_DATA,
   FORM_BUILDER_FIELD_LABELS,
   FORM_INSIGHTS_COUNTS,
   FORM_VALIDATION_MESSAGES,
@@ -101,15 +103,11 @@ test.describe("Form page", () => {
     });
 
     await test.step("8. Submit the form", async () => {
-      await page2
-        .getByTestId(FORM_PUBLISHED_SELECTORS.startOrSubmitButton)
-        .click();
+      await formPage.submitPublishedForm(page2);
     });
 
     await test.step("9. Verify thank you message", async () => {
-      await page2
-        .getByTestId(FORM_PUBLISHED_SELECTORS.thankYouPageMessage)
-        .click();
+      await formPage.expectThankYouPageVisible(page2);
     });
 
     await test.step("10. Verify submission appears in submissions tab", async () => {
@@ -120,8 +118,8 @@ test.describe("Form page", () => {
     });
   });
 
-  let previewPage: Page;
   test("should customize form's field elements", async ({ page, formPage }) => {
+    let previewPage: Page;
     await test.step("2. Create form with choice fields and builder customizations", async () => {
       await formPage.createForm({
         formFields: CUSTOMIZE_FORM_FIELDS,
@@ -246,9 +244,7 @@ test.describe("Form page", () => {
     });
 
     await test.step("7. Submit preview form; submissions increment", async () => {
-      await previewPage
-        .getByTestId(FORM_PUBLISHED_SELECTORS.startOrSubmitButton)
-        .click();
+      await formPage.submitPublishedForm(previewPage);
       await page.reload();
       await expect(
         insightsCountIn(FORM_INSIGHTS_SELECTORS.visitsMetric),
@@ -259,6 +255,65 @@ test.describe("Form page", () => {
       await expect(
         insightsCountIn(FORM_INSIGHTS_SELECTORS.submissionsMetric),
       ).toContainText(FORM_INSIGHTS_COUNTS.one);
+    });
+  });
+
+  test("should control access of form", async ({ page, browser, formPage }) => {
+    await test.step("2. Create and publish a scratch form", async () => {
+      await formPage.createForm({
+        formFields: EMPTY_FORM_FIELDS,
+        formName,
+      });
+    });
+
+    await test.step("3. Enable password protection in settings", async () => {
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.settingsTab)
+        .click();
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.accessControlSettingsLink)
+        .click();
+      await page
+        .getByTestId(
+          FORM_ACCESS_SETTINGS_SELECTORS.accessControlPasswordProtectedRadioInput,
+        )
+        .check();
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.passwordInputField)
+        .fill(FORM_ACCESS_TEST_DATA.formPassword);
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.saveChangesButton)
+        .click();
+    });
+
+    const formUrl = await test.step("4. Capture published form URL from preview", async () => {
+      const previewPage = await formPage.openPublishPreviewInNewTab();
+      const url = previewPage.url();
+      await previewPage.close();
+      return url;
+    });
+
+    await test.step("5. Guest opens form, unlocks with password, submits, sees thank you", async () => {
+      const guestContext = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+      });
+      const guestPage = await guestContext.newPage();
+      try {
+        await guestPage.goto(formUrl);
+        await guestPage
+          .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.passwordTextField)
+          .fill(FORM_ACCESS_TEST_DATA.formPassword);
+        await guestPage
+          .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.continueButton)
+          .click();
+        await guestPage
+          .getByTestId(FORM_PUBLISHED_SELECTORS.emailTextField)
+          .fill(COMMON_FORM_TEST_DATA.validEmail);
+        await formPage.submitPublishedForm(guestPage);
+        await formPage.expectThankYouPageVisible(guestPage);
+      } finally {
+        await guestContext.close();
+      }
     });
   });
 });

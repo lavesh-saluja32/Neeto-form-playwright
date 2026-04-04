@@ -3,6 +3,7 @@ import {
   FORM_BUILDER_SELECTORS,
   FORM_DELETE_FLOW_SELECTORS,
   FORM_LOADING_SELECTORS,
+  FORM_PUBLISHED_SELECTORS,
 } from "@selectors";
 
 interface FormProps {
@@ -14,11 +15,7 @@ interface FormProps {
 export default class FormPage {
   constructor(private page: Page) {}
 
-  createForm = async ({
-    formFields,
-    formName,
-    publish = true,
-  }: FormProps) => {
+  createForm = async ({ formFields, formName, publish = true }: FormProps) => {
     await this.page.getByTestId(FORM_BUILDER_SELECTORS.addFormButton).click();
     await this.page
       .getByTestId(FORM_BUILDER_SELECTORS.startFromScratchButton)
@@ -34,6 +31,7 @@ export default class FormPage {
         .click();
       for (const field of formFields) {
         await this.page.getByRole("button", { name: field }).click();
+        await this.page.getByTestId('content-text-field').fill(field);
       }
     }
     if (publish) {
@@ -51,6 +49,18 @@ export default class FormPage {
       .getByTestId(FORM_BUILDER_SELECTORS.publishPreviewButton)
       .click();
     return popupPromise;
+  };
+
+  submitPublishedForm = async (publishedPage: Page) => {
+    await publishedPage
+      .getByTestId(FORM_PUBLISHED_SELECTORS.startOrSubmitButton)
+      .click();
+  };
+
+  expectThankYouPageVisible = async (publishedPage: Page) => {
+    await expect(
+      publishedPage.getByTestId(FORM_PUBLISHED_SELECTORS.thankYouPageContent),
+    ).toBeVisible();
   };
 
   deleteFormAndVerify = async (formName: string) => {
