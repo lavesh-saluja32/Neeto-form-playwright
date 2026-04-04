@@ -34,6 +34,11 @@ export const FORM_INSIGHTS_SELECTORS = {
   insightsCount: "insights-count",
 } as const;
 
+export const FORM_UNIQUE_SUBMISSION_SETTINGS_SELECTORS = {
+  uniqueSubmissionSettingsLink: "unique-submission-settings-link",
+  cookieTrackRadioItem: "cookie-track-radio-item",
+} as const;
+
 export const FORM_ACCESS_SETTINGS_SELECTORS = {
   settingsTab: "settings-tab",
   accessControlSettingsLink: "access-control-settings-link",
@@ -57,6 +62,7 @@ export const FORM_PUBLISHED_SELECTORS = {
   lastNameTextField: "last-name-text-field",
   thankYouPageMessage: "thank-you-page-message",
   thankYouPageContent: "thank-you-page-content",
+  alreadySubmittedMessage: "already-submitted-message",
   singleChoiceOptionsContainer: "single-choice-options-container",
   formGroupQuestion: "form-group-question",
 } as const;

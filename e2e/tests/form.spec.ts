@@ -7,6 +7,7 @@ import {
   FORM_BUILDER_SELECTORS,
   FORM_ACCESS_SETTINGS_SELECTORS,
   FORM_INSIGHTS_SELECTORS,
+  FORM_UNIQUE_SUBMISSION_SETTINGS_SELECTORS,
 } from "@selectors";
 import {
   COMMON_FORM_TEST_DATA,
@@ -306,6 +307,71 @@ test.describe("Form page", () => {
         await guestPage
           .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.continueButton)
           .click();
+        await guestPage
+          .getByTestId(FORM_PUBLISHED_SELECTORS.emailTextField)
+          .fill(COMMON_FORM_TEST_DATA.validEmail);
+        await formPage.submitPublishedForm(guestPage);
+        await formPage.expectThankYouPageVisible(guestPage);
+      } finally {
+        await guestContext.close();
+      }
+    });
+  });
+
+  test("should allow unique submission", async ({ page, browser, formPage }) => {
+    await test.step("2. Create and publish a scratch form", async () => {
+      await formPage.createForm({
+        formFields: EMPTY_FORM_FIELDS,
+        formName,
+      });
+    });
+
+    await test.step("3. Enable cookie-based unique submission in settings", async () => {
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.settingsTab)
+        .click();
+      await page
+        .getByTestId(
+          FORM_UNIQUE_SUBMISSION_SETTINGS_SELECTORS.uniqueSubmissionSettingsLink,
+        )
+        .click();
+      await page
+        .getByTestId(
+          FORM_UNIQUE_SUBMISSION_SETTINGS_SELECTORS.cookieTrackRadioItem,
+        )
+        .check();
+      await page
+        .getByTestId(FORM_ACCESS_SETTINGS_SELECTORS.saveChangesButton)
+        .click();
+    });
+
+    const formUrl = await test.step("4. Submit once in preview; thank you is shown", async () => {
+      const firstPreview = await formPage.openPublishPreviewInNewTab();
+      const url = firstPreview.url();
+      await firstPreview
+        .getByTestId(FORM_PUBLISHED_SELECTORS.emailTextField)
+        .fill(COMMON_FORM_TEST_DATA.validEmail);
+      await formPage.submitPublishedForm(firstPreview);
+      await formPage.expectThankYouPageVisible(firstPreview);
+      await firstPreview.close();
+      return url;
+    });
+
+    await test.step("5. Second preview in same browser shows already submitted", async () => {
+      const secondPreview = await formPage.openPublishPreviewInNewTab();
+      await expect(
+        secondPreview.getByTestId(FORM_PUBLISHED_SELECTORS.alreadySubmittedMessage),
+      ).toBeVisible();
+      await secondPreview.close();
+    });
+
+    await test.step("6. Fresh browser context can submit again and sees thank you", async () => {
+      const guestContext = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+      });
+      const guestPage = await guestContext.newPage();
+      try {
+        await guestPage.goto(formUrl);
         await guestPage
           .getByTestId(FORM_PUBLISHED_SELECTORS.emailTextField)
           .fill(COMMON_FORM_TEST_DATA.validEmail);
